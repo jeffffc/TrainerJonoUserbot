@@ -1,1 +1,2 @@
 # Trainer Jono's Userbot
+Userbot for my account [Trainer Jono](https://t.me/Trainer_Jono). Currently coding to prepare for [Duker Cup 2](https://t.me/hkdukerchannel/122) of [HK Duker](https://t.me/hkduker).

@@ -3,7 +3,8 @@ import logging
 import time
 
 from telethon import events
-from telethon.tl.types import User, PeerUser
+from telethon.tl.types import User, PeerUser, PeerChannel
+from telethon.tl.functions.channels import LeaveChannelRequest
 
 from constants import client, bot, HK_DUKER, CMD_PREFIX
 from game_tracker import GAME_BOTS
@@ -74,10 +75,19 @@ async def last(event: events.NewMessage.Event) -> None:
                 *[mention_markdown(e) for e in (sender, entity)]))
 
 
+@bot.on(events.ChatAction())
+async def auto_leave(event: events.ChatAction.Event):
+    if event.added_by:
+        chat = PeerChannel(event.chat_id)
+        participants = await client.get_participants(chat, search="Trainer_Jono")
+        if 463998526 not in (p.id for p in participants):
+            await bot(LeaveChannelRequest(chat))
+
+
 @bot.on(events.NewMessage(
-    pattern=fr"(?i){CMD_PREFIX}dchelp(@On9LeaderboardBot)?(\s+(.+))?", chats=HK_DUKER))
+    pattern=fr"(?i){CMD_PREFIX}help(@DukerCupBot)?(\s+(.+))?", chats=HK_DUKER))
 @bot.on(events.MessageEdited(
-    pattern=fr"(?i){CMD_PREFIX}dchelp(@On9LeaderboardBot)?(\s+(.+))?", chats=HK_DUKER))
+    pattern=fr"(?i){CMD_PREFIX}help(@DukerCupBot)?(\s+(.+))?", chats=HK_DUKER))
 async def bot_help(event: events.NewMessage.Event) -> None:
     args = event.pattern_match.group(4)
     try:
@@ -90,7 +100,7 @@ async def bot_help(event: events.NewMessage.Event) -> None:
         else:
             raise AssertionError
     except AssertionError:
-        pass
+        event.reply("Hi!")
 
 
 async def main():
