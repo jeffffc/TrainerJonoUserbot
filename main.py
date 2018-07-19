@@ -71,12 +71,11 @@ async def last(event: events.NewMessage.Event) -> None:
             await event.reply("Dis user no send msg here ber...")
         else:
             sender = await event.get_sender()
-            await msg.reply("{},  this is the latest message of {} in this chat.".format(
-                *[mention_markdown(e) for e in (sender, entity)]))
+            await msg.reply("{}, this is the latest message of {} in this chat.".format(*map(mention_markdown, (sender, entity))))
 
 
 @bot.on(events.ChatAction())
-async def auto_leave(event: events.ChatAction.Event):
+async def auto_leave(event: events.ChatAction.Event) -> None:
     if event.added_by:
         chat = PeerChannel(event.chat_id)
         participants = await client.get_participants(chat, search="Trainer_Jono")
