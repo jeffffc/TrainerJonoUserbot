@@ -3,10 +3,10 @@ import logging
 import time
 
 from telethon import events
-from telethon.tl.types import User, PeerUser, PeerChannel
 from telethon.tl.functions.channels import LeaveChannelRequest
+from telethon.tl.types import User, PeerUser, PeerChannel
 
-from constants import client, bot, HK_DUKER, CMD_PREFIX
+from constants import client, bot, OWNER, HK_DUKER, CMD_PREFIX, LAST_REGEX, BOT_HELP_REGEX
 from game_tracker import GAME_BOTS
 from utils import mention_markdown
 
@@ -50,43 +50,36 @@ async def owner_exec(event: events.NewMessage.Event) -> None:
     await exec(event.pattern_match.group(2))
 
 
-@client.on(events.NewMessage(pattern=fr"(?i){CMD_PREFIX}last(@Trainer_Jono)?\s+(.+)?$"))
-@client.on(events.MessageEdited(pattern=fr"(?i){CMD_PREFIX}last(@Trainer_Jono)?\s+(.+)?$"))
+@client.on(events.NewMessage(pattern=LAST_REGEX))
+@client.on(events.MessageEdited(pattern=LAST_REGEX))
 async def last(event: events.NewMessage.Event) -> None:
+    nub = event.pattern_match.group(3)
+    if nub.isdigit():
+        nub = int(nub)
     try:
-        nub = event.pattern_match.group(3)
-        if nub.isdigit():
-            nub = int(nub)
         entity = await client.get_entity(nub)
         assert isinstance(entity, User)
+        msg = (await client.get_messages(event.input_chat, 1, from_user=entity))[0]
+        await msg.reply("{}, this is the latest message of {} in this chat.".format(
+            *map(mention_markdown, (await event.get_sender(), entity))))
     except ValueError:
-        await event.reply("No such nub ber...")
+        await event.reply("Failed to find entity.")
     except AssertionError:
-        await event.reply("Dis non user ber...")
-    else:
-        msgs = await client.get_messages(event.input_chat, 1, from_user=entity)
-        try:
-            msg = msgs[0]
-        except IndexError:
-            await event.reply("Dis user no send msg here ber...")
-        else:
-            sender = await event.get_sender()
-            await msg.reply("{}, this is the latest message of {} in this chat.".format(*map(mention_markdown, (sender, entity))))
+        await event.reply("The entity is not a user.")
+    except IndexError:
+        await event.reply("This user has never sent a message here.")
 
 
-@bot.on(events.ChatAction())
+@bot.on(events.ChatAction)
 async def auto_leave(event: events.ChatAction.Event) -> None:
     if event.added_by:
         chat = PeerChannel(event.chat_id)
-        participants = await client.get_participants(chat, search="Trainer_Jono")
-        if 463998526 not in (p.id for p in participants):
+        if OWNER.id not in (p.id for p in await client.get_participants(chat, search="Trainer_Jono")):
             await bot(LeaveChannelRequest(chat))
 
 
-@bot.on(events.NewMessage(
-    pattern=fr"(?i){CMD_PREFIX}help(@DukerCupBot)?(\s+(.+))?", chats=HK_DUKER))
-@bot.on(events.MessageEdited(
-    pattern=fr"(?i){CMD_PREFIX}help(@DukerCupBot)?(\s+(.+))?", chats=HK_DUKER))
+@bot.on(events.NewMessage(pattern=BOT_HELP_REGEX, chats=HK_DUKER))
+@bot.on(events.MessageEdited(pattern=BOT_HELP_REGEX, chats=HK_DUKER))
 async def bot_help(event: events.NewMessage.Event) -> None:
     args = event.pattern_match.group(4)
     try:
@@ -99,7 +92,7 @@ async def bot_help(event: events.NewMessage.Event) -> None:
         else:
             raise AssertionError
     except AssertionError:
-        event.reply("Hi!")
+        event.reply("This is not a valid game.")
 
 
 async def main():

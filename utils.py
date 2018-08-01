@@ -10,5 +10,9 @@ def strip_list(li: List[Any]) -> List[Any]:
     return li
 
 
-def mention_markdown(entity: Union[User, Chat, Channel]) -> str:
-    return f"[{get_display_name(entity)}](tg://user?id={entity.id})"
+def flatten_matrix(li: List[List[Any]]) -> List[Any]:
+    return [e for elem in li for e in elem]
+
+
+def mention_markdown(user: User) -> str:
+    return f"[{get_display_name(user)}](tg://user?id={user.id})"
